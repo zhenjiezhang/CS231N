@@ -84,7 +84,7 @@ class brain_TwoLayerNet(object):
     # class scores for X and storing them in the scores variable.              #
     ############################################################################
     
-    self.params['W1'][self.params['W1']<0]=0
+#    self.params['W1'][self.params['W1']<0]=0
 #    self.params['W2'][self.params['W2']<0]=0
     out, cache1=brain_affine_relu_forward(X, self.params['W1'], self.params['b1'])
     out, cache2=affine_forward(out, self.params['W2'], self.params['b2'])
