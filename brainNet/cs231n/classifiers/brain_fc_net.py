@@ -46,9 +46,9 @@ class brain_TwoLayerNet(object):
     # weights and biases using the keys 'W1' and 'b1' and second layer weights #
     # and biases using the keys 'W2' and 'b2'.                                 #
     ############################################################################
-#    self.params['W1']=np.random.normal(0.000,weight_scale,(input_dim, hidden_dim))
+    self.params['W1']=np.random.normal(0.000,weight_scale,(input_dim, hidden_dim))
 
-    self.params['W1']=np.random.normal(0.00015,weight_scale*5.8,(input_dim, hidden_dim))
+#    self.params['W1']=np.random.normal(0.00015,weight_scale*5.8,(input_dim, hidden_dim))
     self.params['b1']=np.zeros(hidden_dim)
     self.params['W2']=np.random.normal(0,weight_scale,(hidden_dim, num_classes))
 
