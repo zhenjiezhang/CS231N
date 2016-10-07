@@ -30,6 +30,59 @@ def affine_relu_backward(dout, cache):
   return dx, dw, db
 
 
+def brain_affine_relu_forward(x, w, b):
+  """
+  Convenience layer that perorms an affine transform followed by a ReLU
+
+  Inputs:
+  - x: Input to the affine layer
+  - w, b: Weights for the affine layer
+
+  Returns a tuple of:
+  - out: Output from the ReLU
+  - cache: Object to give to the backward pass
+  """
+  a, fc_cache = brain_affine_forward(x, w, b)
+  out, relu_cache = brain_relu_forward(a)
+  cache = (fc_cache, relu_cache)
+  return out, cache
+
+
+def brain_affine_relu_backward(dout, cache):
+  """
+  Backward pass for the affine-relu convenience layer
+  """
+  fc_cache, relu_cache = cache
+  da = brain_relu_backward(dout, relu_cache)
+  dx, dw, db = brain_affine_backward(da, fc_cache)
+  return dx, dw, db
+
+def brain_affine_retanh_forward(x, w, b):
+  """
+  Convenience layer that perorms an affine transform followed by a ReLU
+
+  Inputs:
+  - x: Input to the affine layer
+  - w, b: Weights for the affine layer
+
+  Returns a tuple of:
+  - out: Output from the ReLU
+  - cache: Object to give to the backward pass
+  """
+  a, fc_cache = brain_affine_forward(x, w, b)
+  out, retanh_cache = brain_retanh_forward(a)
+  cache = (fc_cache, retanh_cache)
+  return out, cache
+
+
+def brain_affine_retanh_backward(dout, cache):
+  """
+  Backward pass for the affine-relu convenience layer
+  """
+  fc_cache, retanh_cache = cache
+  da = brain_retanh_backward(dout, retanh_cache)
+  dx, dw, db = brain_affine_backward(da, fc_cache)
+  return dx, dw, db
 
 
 def conv_relu_forward(x, w, b, conv_param):

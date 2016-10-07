@@ -1,9 +1,69 @@
 import numpy as np
 
+def brain_input_forward(x):
+    low=x.min()
+    high=x.max()
+    scale=high-low
+    scale=100
+    out=np.zeros_like(x) if scale==0 else (x-low)/scale
+    cache=(low, high, scale)
+    return out, cache
 
-def affine_forward(x, w, b):
+def brain_input_backward(dout, cache):
+    _, _, scale=cache
+    if scale==0:
+        return dout
+    else:
+        return dout/scale
+
+def brain_affine_forward(x, w, Vrest=-60, Vreverse=0):
   """
-  Computes the forward pass for an affine (fully-connected) layer.
+  Computers the forward pass for brain affine layer.  
+  
+  input:
+      x:  presynaptic input from neurons.  range: 0 ~ 1.
+      w:  connection strength between pre and post syanptic neurons.  w means mV of voltage change expected for a full input (value of 1) from the presynaptic neuron, assumming a constant conductance of that at the resting potential.
+The resulting depolarization (including conductance change with depolarization, assuming a reverse potential of 0mV for GluRs) is the output:
+out=x*w/(1+x*w/d)
+d is the resting driving force, measured as -Vrest.
+      
+      Vrest: resting membrane potential
+      Vreverse:  reverse potential of input current
+  
+  output:
+      out: Membrane depolarization caused by the input
+      cache:  used for backward pass
+  
+  """
+
+  out=x.reshape(x.shape[0],-1).dot(w)
+  d=Vreverse-Vrest
+  out=out/(1+out/d)
+
+  cache = (x, w, Vrest, Vreverse)
+  return out, cache
+
+
+def brain_affine_backward(dout, cache):
+  """
+  Computers the backward pass for brain affine layer. 
+  do/dx=(d**2/(d+x*w)**2)*w.T
+  do/dw=(d**2/(d+x*w)**2)*x
+  """
+  x, w, Vrest, Vreverse = cache
+  d=Vreverse-Vrest
+  line_x=x.reshape(x.shape[0],-1)
+
+
+  dx=(dout*(d**2)/((d+line_x.dot(w))**2)).dot(w.T).reshape(x.shape)
+  dw=line_x.T.dot((dout*(d**2)/((d+line_x.dot(w))**2)))
+
+
+  return dx, dw
+
+def brain_interneuron_affine_forward(x,w,b):
+  """
+  Computes the forward pass for an interneuron affine (fully-connected) layer.
 
   The input x has shape (N, d_1, ..., d_k) and contains a minibatch of N
   examples, where each example x[i] has shape (d_1, ..., d_k). We will
@@ -33,20 +93,9 @@ def affine_forward(x, w, b):
   return out, cache
 
 
-def affine_backward(dout, cache):
+def brain_interneuron_affine_backward(dout, cache):
   """
-  Computes the backward pass for an affine layer.
-
-  Inputs:
-  - dout: Upstream derivative, of shape (N, M)
-  - cache: Tuple of:
-    - x: Input data, of shape (N, d_1, ... d_k)
-    - w: Weights, of shape (D, M)
-
-  Returns a tuple of:
-  - dx: Gradient with respect to x, of shape (N, d1, ..., d_k)
-  - dw: Gradient with respect to w, of shape (D, M)
-  - db: Gradient with respect to b, of shape (M,)
+  not changed yet
   """
   x, w, b = cache
   dx, dw, db = None, None, None
@@ -56,17 +105,73 @@ def affine_backward(dout, cache):
   dx=dout.dot(w.T).reshape(x.shape)
   dw=x.reshape(x.shape[0],-1).T.dot(dout)
   db=np.ones(x.shape[0]).dot(dout)
-  ################                 #############################################################
-  #                             END OF YOUR CODE            kl                  #
+  #############################################################################
+  #                             END OF YOUR CODE                              #
   #############################################################################
   return dx, dw, db
 
 
-
-
-def relu_forward(x):
+def brain_affine_backward_original(dout, cache):
   """
-  Computes the forward pass for a layer of rectified linear units (ReLUs).
+  not changed yet
+  """
+  x, w, b = cache
+  dx, dw, db = None, None, None
+  #############################################################################
+  # TODO: Implement the affine backward pass.                                 #
+  #############################################################################
+  dx=dout.dot(w.T).reshape(x.shape)
+  dw=x.reshape(x.shape[0],-1).T.dot(dout)
+  db=np.ones(x.shape[0]).dot(dout)
+  #############################################################################
+  #                             END OF YOUR CODE                              #
+  #############################################################################
+  return dx, dw, db
+
+
+def brain_relu_forward(x, threshold=20, vm2AP=0.01, saturationDep=60):
+  """
+  Computes the forward pass for a layer of brain rectified linear units (brain ReLUs).
+
+  Input:
+  - x: Inputs, of any shape
+
+  Returns a tuple of:
+  - out: Output, of the same shape as x
+  - cache: x
+  """
+
+  out=np.array(x)
+  out-=threshold
+  out*=vm2AP
+  out[out<0]=0
+
+  cache = (x, threshold, vm2AP, saturationDep)
+  return out, cache
+
+
+def brain_relu_backward(dout, cache):
+  """
+  Computes the backward pass for a layer of rectified linear units (ReLUs).
+
+  Input:
+  - dout: Upstream derivatives, of any shape
+  - cache: Input x, of same shape as dout
+
+  Returns:
+  - dx: Gradient with respect to x
+  """
+  x, threshold, vm2AP, saturationDep= cache
+
+  dx=np.array(dout)
+  dx*=vm2AP
+  dx[x<=threshold]=0
+
+  return dx
+
+def brain_retanh_forward(x):
+  """
+  Computes the forward pass for a layer of brain rectified linear units (brain ReLUs).
 
   Input:
   - x: Inputs, of any shape
@@ -80,17 +185,20 @@ def relu_forward(x):
   # TODO: Implement the ReLU forward pass.                                    #
   #############################################################################
   out=np.array(x)
+  out-=threshold
+  out[out<threshold]=0
+  out[out>saturateDep]=saturateDep
+  out*=vm2AP
+  out=np.tanh(out)
   
-  out[out<0]=0
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
-  cache = x
+  cache = np.array(out)
   return out, cache
 
 
-
-def relu_backward(dout, cache):
+def brain_retanh_backward(dout, cache):
   """
   Computes the backward pass for a layer of rectified linear units (ReLUs).
 
@@ -101,18 +209,19 @@ def relu_backward(dout, cache):
   Returns:
   - dx: Gradient with respect to x
   """
-  dx, x = None, cache
+  dx, out = None, cache
   #############################################################################
   # TODO: Implement the ReLU backward pass.                                   #
   #############################################################################
-  dx=np.array(dout)
-  dx[x<=0]=0
+  dx=np.array(dout)/np.square(np.cosh(out))*vm2AP
+  dx[out<0]=0
+  dx[out==saturateDep]=0
+
   
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
   return dx
-
 
 
 def batchnorm_forward(x, gamma, beta, bn_param):

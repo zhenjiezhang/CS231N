@@ -52,7 +52,7 @@ class brain_TwoLayerNet(object):
     self.params['b1']=np.zeros(hidden_dim)
     self.params['W2']=np.random.normal(0,weight_scale,(hidden_dim, num_classes))
 
-   # self.params['W2']=np.random.normal(20,weight_scale*10000,(hidden_dim, num_classes))
+    self.params['W2']=np.random.normal(100,weight_scale*10000,(hidden_dim, num_classes))
     self.params['b2']=np.zeros(num_classes)
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -85,9 +85,9 @@ class brain_TwoLayerNet(object):
     ############################################################################
     
     self.params['W1'][self.params['W1']<0]=0
-#    self.params['W2'][self.params['W2']<0]=0
+    self.params['W2'][self.params['W2']<0]=0
     out, cache1=brain_affine_relu_forward(X, self.params['W1'], self.params['b1'])
-    out, cache2=affine_forward(out, self.params['W2'], self.params['b2'])
+    out, cache2=brain_affine_relu_forward(out, self.params['W2'], self.params['b2'])
     scores=np.array(out)
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -112,7 +112,7 @@ class brain_TwoLayerNet(object):
     loss+=0.5*self.reg*((self.params['W1']**2).sum()+(self.params['W2']**2).sum())
 #    loss+=0.5*self.reg*((self.params['W1']**2).sum()
                         
-    dout1, grads['W2'], grads['b2']=affine_backward(dout2, cache2)
+    dout1, grads['W2'], grads['b2']=brain_affine_relu_backward(dout2, cache2)
     grads['W2']+=self.reg*self.params['W2']
     _, grads['W1'], grads['b1']=brain_affine_relu_backward(dout1, cache1)
     grads['W1']+=self.reg*self.params['W1']
